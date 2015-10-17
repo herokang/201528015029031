@@ -1,3 +1,4 @@
+# My student ID is 201528015029031
 module FunWithStrings
   def palindrome?
     _s = self.gsub(/\W/,'').downcase
