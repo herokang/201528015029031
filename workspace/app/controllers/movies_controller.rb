@@ -11,21 +11,44 @@ class MoviesController < ApplicationController
   end
 
   def index
+    # if the incoming URI is lacking the right params[]
+    # then redirect_to the new URI containing the appropriate parameters
+    need_redirect = false 
+    
     @sort_by = params[:sort_by]
-    if @sort_by == "release_date"
-      query = Movie.order(:release_date)
-    elsif @sort_by == "title"
-      query = Movie.order(:title)
-    else
-      query = Movie
+    if @sort_by == nil
+      @sort_by = session[:sort_by]
+      if @sort_by == nil
+        @sort_by = "title" # order by title defaultly
+      end
+      need_redirect = true
     end
+    session[:sort_by] = @sort_by # update session
     
     @all_ratings = Movie.ratings
-    if  !params[:ratings].nil?
-      @ratings = params[:ratings].map { |r| r[0] }
-      @movies = query.where(rating: @ratings)
+    @ratings = params[:ratings]
+    if @ratings == nil || @ratings.empty?
+      @ratings = session[:ratings]
+      if @ratings == nil || @ratings.empty?
+        @ratings = @all_ratings
+      end
+      need_redirect = true
+    elsif @ratings.kind_of?(Hash)
+      @ratings = @ratings.keys
+    end
+    session[:ratings] = @ratings
+    
+    if need_redirect
+      flash.keep
+      redirect_to movies_path(:sort_by => @sort_by, :ratings => @ratings)
+    end
+    
+    if @sort_by == "title" 
+      @movies = Movie.where(["rating IN (?)", @ratings]).order("title ASC")
+    elsif @sort_by == "release_date" 
+      @movies = Movie.where(["rating IN (?)", @ratings]).order("release_date ASC")
     else
-      @movies = query.all
+      @movies = Movie.all
     end
   end
 
